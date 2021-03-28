@@ -1,12 +1,15 @@
 package io.github.lucaargolo.slotlock.mixin;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import io.github.lucaargolo.slotlock.Slotlock;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawableHelper;
 import net.minecraft.client.gui.hud.InGameHud;
+import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.screen.slot.Slot;
 import net.minecraft.util.Identifier;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -31,10 +34,13 @@ public class InGameHudMixin extends DrawableHelper {
     }
 
     @Inject(at = @At("HEAD"), method = "renderHotbarItem")
-    public void renderHotbarItem(int i, int j, float f, PlayerEntity playerEntity, ItemStack itemStack, CallbackInfo info) {
+    public void renderHotbarItem(int i, int j, float tickDelta, PlayerEntity player, ItemStack stack, int k, CallbackInfo info) {
+        if (player.getInventory().getStack(slotIndex).isEmpty()) Slotlock.unlockSlot(slotIndex);
         if(Slotlock.isLocked(slotIndex)) {
-            this.client.getTextureManager().bindTexture(SLOT_LOCK_TEXTURE);
-            this.drawTexture(matrices, i, j, 0, 0, 16, 16);
+            RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
+            RenderSystem.setShaderTexture(0, SLOT_LOCK_TEXTURE);
+            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
+            drawTexture(matrices, i, j, 0, 0, 16, 16);
         }
         slotIndex++;
     }

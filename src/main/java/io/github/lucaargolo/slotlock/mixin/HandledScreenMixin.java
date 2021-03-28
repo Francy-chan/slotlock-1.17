@@ -1,9 +1,11 @@
 package io.github.lucaargolo.slotlock.mixin;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import io.github.lucaargolo.slotlock.Slotlock;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.gui.screen.ingame.HandledScreen;
+import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.item.ItemStack;
@@ -26,35 +28,39 @@ import java.util.List;
 @Mixin(HandledScreen.class)
 public abstract class HandledScreenMixin<T extends ScreenHandler> extends Screen {
 
+    protected PlayerInventory playerInventory;
+
     protected HandledScreenMixin(Text title) {
         super(title);
     }
 
     private static final Identifier SLOT_LOCK_TEXTURE = new Identifier(Slotlock.MOD_ID, "textures/gui/lock_overlay.png");
-    @Shadow @Final protected PlayerInventory playerInventory;
     @Shadow @Nullable protected Slot focusedSlot;
 
     @Shadow @Final protected T handler;
 
     @Inject(at = @At("HEAD"), method = "onMouseClick", cancellable = true)
     public void onMouseClick(Slot slot, int invSlot, int clickData, SlotActionType actionType, CallbackInfo info) {
+        playerInventory = this.client.player.getInventory();
         Slotlock.handleMouseClick(handler, playerInventory, slot, invSlot, clickData, actionType, info);
     }
 
     @Inject(at = @At("HEAD"), method = "keyPressed", cancellable = true)
     public void keyPressed(int keyCode, int scanCode, int modifiers, CallbackInfoReturnable<Boolean> info) {
+        playerInventory = this.client.player.getInventory();
         Slotlock.handleKeyPressed(focusedSlot, playerInventory, keyCode, scanCode, info);
     }
 
     @Inject(at = @At("HEAD"), method = "handleHotbarKeyPressed", cancellable = true)
     public void handleHotbarKeyPressed(int keyCode, int scanCode, CallbackInfoReturnable<Boolean> info) {
+        playerInventory = this.client.player.getInventory();
         Slotlock.handleHotbarKeyPressed(focusedSlot, playerInventory, info);
     }
 
     @SuppressWarnings("ConstantConditions")
     @Inject(at = @At("HEAD"), method = "drawMouseoverTooltip", cancellable = true)
     public void drawMouseoverTooltip(MatrixStack matrices, int x, int y, CallbackInfo info) {
-        if (this.client.player.inventory.getCursorStack().isEmpty() && this.focusedSlot != null && this.focusedSlot.inventory == this.playerInventory) {
+        if (this.client.player.playerScreenHandler.getCursorStack().isEmpty() && this.focusedSlot != null && this.focusedSlot.inventory == this.playerInventory) {
             Slot finalSlot = focusedSlot;
             if(finalSlot instanceof CreativeInventoryScreen.CreativeSlot) {
                 finalSlot = ((CreativeSlotAccessor) finalSlot).getSlot();
@@ -72,12 +78,19 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> extends Screen
 
     @Inject(at = @At("HEAD"), method = "drawSlot")
     public void drawSlot(MatrixStack matrices, Slot slot, CallbackInfo info) {
+        playerInventory = this.client.player.getInventory();
         Slot finalSlot = slot;
         if(finalSlot instanceof CreativeInventoryScreen.CreativeSlot) {
             finalSlot = ((CreativeSlotAccessor) finalSlot).getSlot();
         }
+
         if(this.client != null && slot.inventory == playerInventory && Slotlock.isLocked(((SlotAccessor) finalSlot).getIndex())) {
-            this.client.getTextureManager().bindTexture(SLOT_LOCK_TEXTURE);
+           if (!finalSlot.hasStack()) Slotlock.unlockSlot(((SlotAccessor) finalSlot).getIndex());
+        }
+        if(this.client != null && slot.inventory == playerInventory && Slotlock.isLocked(((SlotAccessor) finalSlot).getIndex())) {
+            RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
+            RenderSystem.setShaderTexture(0, SLOT_LOCK_TEXTURE);
+            RenderSystem.setShaderColor(1.0F, 1.0F, 1.0F, 1.0F);
             this.drawTexture(matrices, slot.x, slot.y, 0, 0, 16, 16);
         }
     }

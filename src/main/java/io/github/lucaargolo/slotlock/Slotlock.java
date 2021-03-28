@@ -14,8 +14,8 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ServerInfo;
-import net.minecraft.client.options.GameOptions;
-import net.minecraft.client.options.KeyBinding;
+import net.minecraft.client.option.GameOptions;
+import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.screen.ScreenHandler;
@@ -70,7 +70,6 @@ public class Slotlock implements ClientModInitializer {
                     jsonObject.add(currentKey, jsonArray);
                     try {
                         Files.write(slotLockPath, jsonObject.toString().getBytes(StandardCharsets.UTF_8));
-                        Slotlock.LOGGER.info("Successfully updated slotlock file");
                     }catch (Exception e) {
                         Slotlock.LOGGER.error("Failed to update slotlock file");
                     }
@@ -115,16 +114,13 @@ public class Slotlock implements ClientModInitializer {
                 key = info.address;
             }
         }
-        Slotlock.LOGGER.info("Loading slotlock file");
         currentKey = key;
         Slotlock.lockedSlots = new LinkedHashSet<>();
         File slotLockFile = new File(MinecraftClient.getInstance().runDirectory, "slotlock.json");
         Path slotLockPath = Paths.get(slotLockFile.getAbsolutePath());
         if(Files.notExists(slotLockPath)) {
             try{
-                Slotlock.LOGGER.info("File not found! Creating new slotlock file");
                 Files.write(slotLockPath, "{ }".getBytes(StandardCharsets.UTF_8));
-                Slotlock.LOGGER.info("Successfully created new slotlock file");
             }catch (Exception e){
                 Slotlock.LOGGER.error("Failed to create slotlock file");
                 Slotlock.LOGGER.error(e.getStackTrace());
@@ -150,11 +146,9 @@ public class Slotlock implements ClientModInitializer {
                     Slotlock.lockedSlots.add(slot);
             });
         }
-        Slotlock.LOGGER.info("Successfully loaded slotlock file");
-
     }
 
-    public static void handleMouseClick(ScreenHandler handler, PlayerInventory playerInventory,  Slot slot, int invSlot, int clickData, SlotActionType actionType, CallbackInfo info) {
+    public static void handleMouseClick(ScreenHandler handler, PlayerInventory playerInventory, Slot slot, int invSlot, int clickData, SlotActionType actionType, CallbackInfo info) {
         if(slot != null && slot.inventory == playerInventory && Slotlock.isLocked(((SlotAccessor) slot).getIndex())) {
             info.cancel();
         }
@@ -224,7 +218,7 @@ public class Slotlock implements ClientModInitializer {
         boolean toPress = false;
         while(options.keySwapHands.wasPressed()) {
             if (!player.isSpectator()) {
-                int selectedSlot = player.inventory.selectedSlot;
+                int selectedSlot = player.getInventory().selectedSlot;
                 if(!Slotlock.isLocked(selectedSlot)) {
                     toPress = true;
                 }

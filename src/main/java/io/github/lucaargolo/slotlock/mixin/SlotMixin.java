@@ -24,7 +24,7 @@ public class SlotMixin {
     @Inject(at = @At("HEAD"), method = "canInsert", cancellable = true)
     public void canInsert(ItemStack stack, CallbackInfoReturnable<Boolean> info) {
         if(MinecraftClient.getInstance().player != null) {
-            PlayerInventory playerInventory = MinecraftClient.getInstance().player.inventory;
+            PlayerInventory playerInventory = MinecraftClient.getInstance().player.getInventory();
             if(inventory == playerInventory && Slotlock.isLocked(index)) {
                 info.setReturnValue(false);
             }
@@ -33,7 +33,7 @@ public class SlotMixin {
 
     @Inject(at = @At("HEAD"), method = "canTakeItems", cancellable = true)
     public void canTakeItems(PlayerEntity playerEntity, CallbackInfoReturnable<Boolean> info) {
-        if(inventory == playerEntity.inventory && Slotlock.isLocked(index)) {
+        if(inventory == playerEntity.getInventory() && Slotlock.isLocked(index)) {
             info.setReturnValue(false);
         }
     }

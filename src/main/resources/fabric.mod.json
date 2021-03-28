@@ -5,7 +5,8 @@
   "name": "SlotLock",
   "description": "Lock! Don't drop!",
   "authors": [
-    "D4rkness_King"
+    "D4rkness_King",
+    "Francy-Chan"
   ],
   "contact": {
     "homepage": "https://www.curseforge.com/minecraft/mc-mods/slotlock",
@@ -26,7 +27,6 @@
   ],
   "depends": {
     "fabricloader": ">=0.8.0",
-    "fabric": "*",
-    "minecraft": "1.16.*"
+    "fabric": "*"
   }
 }

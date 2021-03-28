@@ -22,7 +22,7 @@ public abstract class ClientPlayerEntityMixin extends AbstractClientPlayerEntity
 
     @Inject(at = @At("HEAD"), method = "dropSelectedItem", cancellable = true)
     public void dropSelectedItem(boolean dropEntireStack, CallbackInfoReturnable<Boolean> info){
-        Slotlock.handleDropSelectedItem(this.inventory, info);
+        Slotlock.handleDropSelectedItem(this.getInventory(), info);
     }
 
 //    @Inject(at = @At("HEAD"), method = "tick")
