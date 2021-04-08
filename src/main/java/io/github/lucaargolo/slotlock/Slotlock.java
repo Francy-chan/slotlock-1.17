@@ -18,6 +18,7 @@ import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.item.ItemStack;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
@@ -148,10 +149,21 @@ public class Slotlock implements ClientModInitializer {
         }
     }
 
-    public static void handleMouseClick(ScreenHandler handler, PlayerInventory playerInventory, Slot slot, int invSlot, int clickData, SlotActionType actionType, CallbackInfo info) {
+    public static void handleMouseClick(ScreenHandler handler, PlayerInventory playerInventory, Slot slot, int invSlot, int clickData, SlotActionType actionType, ItemStack cursorStack, CallbackInfo info) {
+        if(!MinecraftClient.getInstance().isOnThread()) return;
         if(slot != null && slot.inventory == playerInventory && Slotlock.isLocked(((SlotAccessor) slot).getIndex())) {
             info.cancel();
         }
+
+        if(slot != null && actionType == SlotActionType.PICKUP_ALL) {
+            handler.slots.forEach(handlerSlot -> {
+                int slotIndex = ((SlotAccessor) handlerSlot).getIndex();
+                if(handlerSlot.inventory == playerInventory && Slotlock.isLocked(slotIndex) && canMergeItems(cursorStack, handlerSlot.getStack())) {
+                    info.cancel();
+                }
+            });
+        }
+
         if(actionType == SlotActionType.QUICK_MOVE && invSlot >= 0 && invSlot < handler.slots.size()) {
             Slot slot2 = handler.slots.get(invSlot);
             if(slot2.inventory == playerInventory && Slotlock.isLocked(((SlotAccessor) slot2).getIndex())) {
@@ -174,6 +186,7 @@ public class Slotlock implements ClientModInitializer {
     }
 
     public static void handleKeyPressed(Slot focusedSlot, PlayerInventory playerInventory, int keyCode, int scanCode, CallbackInfoReturnable<Boolean> info) {
+        if(!MinecraftClient.getInstance().isOnThread()) return;
         if(keyCode != 256 && !MinecraftClient.getInstance().options.keyInventory.matchesKey(keyCode, scanCode)) {
             Slot finalSlot = focusedSlot;
             if(finalSlot instanceof CreativeInventoryScreen.CreativeSlot) {
@@ -181,23 +194,23 @@ public class Slotlock implements ClientModInitializer {
             }
             if(finalSlot != null) {
                 int index = ((SlotAccessor) finalSlot).getIndex();
-                if (Slotlock.lockBinding.matchesKey(keyCode, scanCode) && finalSlot.inventory == playerInventory) {
-                    boolean locked = Slotlock.isLocked(index);
-                    if (locked) {
-                        Slotlock.unlockSlot(index);
-                    } else if (!finalSlot.getStack().isEmpty()) {
-                        Slotlock.lockSlot(index);
+                if(finalSlot.inventory == playerInventory) {
+                    if (Slotlock.lockBinding.matchesKey(keyCode, scanCode)) {
+                        boolean locked = Slotlock.isLocked(index);
+                        if (locked)
+                            Slotlock.unlockSlot(index);
+                        else if (!finalSlot.getStack().isEmpty())
+                            Slotlock.lockSlot(index);
                     }
-                } else {
-                    if (Slotlock.isLocked(index)) {
+                    else if (Slotlock.isLocked(index))
                         info.setReturnValue(true);
-                    }
                 }
             }
         }
     }
 
     public static void handleHotbarKeyPressed(Slot focusedSlot, PlayerInventory playerInventory, CallbackInfoReturnable<Boolean> info) {
+        if(!MinecraftClient.getInstance().isOnThread()) return;
         Slot finalSlot = focusedSlot;
         if(finalSlot instanceof CreativeInventoryScreen.CreativeSlot) {
             finalSlot = ((CreativeSlotAccessor) finalSlot).getSlot();
@@ -208,6 +221,7 @@ public class Slotlock implements ClientModInitializer {
     }
 
     public static void handleDropSelectedItem(PlayerInventory playerInventory, CallbackInfoReturnable<Boolean> info) {
+        if(!MinecraftClient.getInstance().isOnThread()) return;
         int selectedSlot = playerInventory.selectedSlot;
         if(Slotlock.isLocked(selectedSlot)) {
             info.setReturnValue(false);
@@ -215,6 +229,7 @@ public class Slotlock implements ClientModInitializer {
     }
 
     public static void handleInputEvents(GameOptions options, ClientPlayerEntity player) {
+        if(!MinecraftClient.getInstance().isOnThread()) return;
         boolean toPress = false;
         while(options.keySwapHands.wasPressed()) {
             if (!player.isSpectator()) {
@@ -227,7 +242,15 @@ public class Slotlock implements ClientModInitializer {
         if(toPress) KeyBinding.onKeyPressed(((KeyBindingAccessor) options.keySwapHands).getBoundKey());
     }
 
-
-
-
+    private static boolean canMergeItems(ItemStack first, ItemStack second) {
+        if (first.getItem() != second.getItem()) {
+            return false;
+        } else if (first.getDamage() != second.getDamage()) {
+            return false;
+        } else if (first.getCount() > first.getMaxCount()) {
+            return false;
+        } else {
+            return ItemStack.areTagsEqual(first, second);
+        }
+    }
 }

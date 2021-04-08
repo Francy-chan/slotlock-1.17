@@ -1,6 +1,7 @@
 package io.github.lucaargolo.slotlock.mixin;
 
 import io.github.lucaargolo.slotlock.Slotlock;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.ingame.CreativeInventoryScreen;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ItemStack;
@@ -22,6 +23,7 @@ public class ScreenHandlerMixin {
 
     @Inject(at = @At("HEAD"), method = "onSlotClick", cancellable = true)
     public void onSlotClick(int i, int j, SlotActionType actionType, PlayerEntity playerEntity, CallbackInfo info) {
+        if(!MinecraftClient.getInstance().isOnThread()) return;
         if(i >= 0 && i < this.slots.size()) {
             Slot finalSlot = this.slots.get(i);
             if(finalSlot instanceof CreativeInventoryScreen.CreativeSlot) {

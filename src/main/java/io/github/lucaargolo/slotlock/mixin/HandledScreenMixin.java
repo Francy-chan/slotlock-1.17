@@ -42,7 +42,7 @@ public abstract class HandledScreenMixin<T extends ScreenHandler> extends Screen
     @Inject(at = @At("HEAD"), method = "onMouseClick", cancellable = true)
     public void onMouseClick(Slot slot, int invSlot, int clickData, SlotActionType actionType, CallbackInfo info) {
         playerInventory = this.client.player.getInventory();
-        Slotlock.handleMouseClick(handler, playerInventory, slot, invSlot, clickData, actionType, info);
+        Slotlock.handleMouseClick(handler, playerInventory, slot, invSlot, clickData, actionType, this.client.player.playerScreenHandler.getCursorStack(), info);
     }
 
     @Inject(at = @At("HEAD"), method = "keyPressed", cancellable = true)

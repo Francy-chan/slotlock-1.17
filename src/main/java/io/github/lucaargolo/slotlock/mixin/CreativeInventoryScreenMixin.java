@@ -38,7 +38,7 @@ public abstract class CreativeInventoryScreenMixin extends AbstractInventoryScre
             }
             info.cancel();
         }
-        Slotlock.handleMouseClick(handler, playerInventory, slot, invSlot, clickData, actionType, info);
+        Slotlock.handleMouseClick(handler, playerInventory, slot, invSlot, clickData, actionType, this.client.player.playerScreenHandler.getCursorStack(), info);
     }
 
 }
